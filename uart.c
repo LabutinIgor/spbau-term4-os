@@ -3,7 +3,7 @@
 void init_uart() {
     out8(0x3f8 + 3, 3 | (1 << 7));  //initialize Line Control Register to change divisor
     out8(0x3f8 + 0, 0x0001u & 0xff);  //initialize low byte of divisor
-    out8(0x3f8 + 1, 0x0001u & 0xff);  //initialize high byte of divisor
+    out8(0x3f8 + 1, (0x0001u >> 8) & 0xff);  //initialize high byte of divisor
     out8(0x3f8 + 3, 3);  //initialize Line Control Register
     out8(0x3f8 + 1, 0);  //initialize Interrupt Enable Register
 }

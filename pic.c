@@ -13,3 +13,7 @@ void init_pic() {
     out8(0xA1, 0x02);  //0b00000010
     out8(0xA1, 0x01);  //0b00000001
 }
+
+void send_eoi() {
+    out8(0x20, 0x20);  //send EOI to master
+}
