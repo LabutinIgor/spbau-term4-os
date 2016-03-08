@@ -13,9 +13,12 @@ void main(void) {
     init_idt();
     puts_uart("idt initialized\n");
 
-    __asm__ volatile ("sti");
 
-    while (1) {
-        __asm__ volatile ("hlt");
-    }
+    
+
+    //__asm__ volatile ("sti");
+
+    //while (1) {
+    //    __asm__ volatile ("hlt");
+    //}
 }

@@ -21,5 +21,5 @@ void init_idt() {
     idtp.base = (uint64_t) idt;
     idtp.size = sizeof(idt) - 1;
     set_idt(&idtp);
-    set_descriptor(32, handler);
+    //set_descriptor(32, handler);
 }
