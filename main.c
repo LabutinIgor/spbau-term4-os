@@ -1,24 +1,15 @@
-#include "uart.h"
-#include "pic.h"
-#include "pit.h"
 #include "interrupt.h"
+#include "serial.h"
+#include "stdio.h"
+#include "time.h"
 
-void main(void) { 
-    init_uart();
-    puts_uart("uart initialized\n");
-    init_pic();
-    puts_uart("pic initialized\n");
-    init_pit();
-    puts_uart("pit initialized\n");
-    init_idt();
-    puts_uart("idt initialized\n");
+void main(void)
+{
+	setup_serial();
+	setup_ints();
+	setup_time();
 
+	local_irq_enable();
 
-    
-
-    //__asm__ volatile ("sti");
-
-    //while (1) {
-    //    __asm__ volatile ("hlt");
-    //}
+	while (1);
 }
