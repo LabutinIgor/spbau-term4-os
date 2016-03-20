@@ -2,6 +2,7 @@
 #include "serial.h"
 #include "stdio.h"
 #include "time.h"
+#include "memory_map.h"
 
 void main(void)
 {
@@ -9,7 +10,12 @@ void main(void)
 	setup_ints();
 	setup_time();
 
-	local_irq_enable();
+	//local_irq_enable();
+
+	if (validate_map()) {
+		get_map();
+		print_map();
+	}
 
 	while (1);
 }
