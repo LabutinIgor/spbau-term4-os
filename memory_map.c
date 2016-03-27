@@ -34,6 +34,18 @@ void get_map() {
     os_entry.type = 2;
 
     entries[map_size++] = os_entry;
+
+    for (int i = 0; i < map_size; i++) {
+        if (entries[i].type == 1 && entries[i].addr <= os_entry.addr && entries[i].addr + entries[i].len >= os_entry.addr + os_entry.len) {
+            multiboot_memory_map_t new_free_entry = entries[i];
+            new_free_entry.addr = os_entry.addr + os_entry.len;
+            new_free_entry.len = (entries[i].addr + entries[i].len) - (os_entry.addr + os_entry.len);
+            entries[map_size++] = new_free_entry;
+
+            entries[i].len = os_entry.addr - entries[i].addr;
+            break;
+        }
+    }
 }
 
 void print_map() {
