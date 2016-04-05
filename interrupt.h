@@ -15,6 +15,8 @@ struct irqchip {
 	void (*eoi)(unsigned);
 };
 
+void unmask_irq(int irq);
+
 static inline void set_idt(const struct idt_ptr *ptr)
 { __asm__ volatile ("lidt (%0)" : : "a"(ptr)); }
 

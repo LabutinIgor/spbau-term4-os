@@ -6,6 +6,7 @@
 #include "stdio.h"
 #include "misc.h"
 #include "time.h"
+#include "threads.h"
 
 static bool range_intersect(phys_t l0, phys_t r0, phys_t l1, phys_t r1)
 {
@@ -96,6 +97,96 @@ static void slab_smoke_test(void)
 #undef ALLOCS
 }
 
+void foo1(void* arg) {
+	for (int i = 0; i < (long long) arg; i++) {
+		printf("foo1: %d\n", i);
+		local_irq_disable();
+		if (i % 5 == 0)
+			scedule();
+		local_irq_enable();
+	}
+}
+
+void foo2(void* arg) {
+	for (int i = 0; i < (long long) arg; i++) {
+		printf("foo2: %d\n", i);
+		local_irq_disable();
+		if (i % 5 == 0)
+			scedule();
+		local_irq_enable();
+	}
+}
+
+int descriptor1;
+
+void foo1_lock(void* arg) {
+	lock(&descriptor1);
+	for (int i = 0; i < (long long) arg; i++) {
+		printf("foo1_lock: %d\n", i);
+		local_irq_disable();
+		scedule();
+		local_irq_enable();
+	}
+	unlock(&descriptor1);
+}
+
+void foo2_lock(void* arg) {
+	lock(&descriptor1);
+	for (int i = 0; i < (long long) arg; i++) {
+		printf("foo2_lock: %d\n", i);
+		local_irq_disable();
+		scedule();
+		local_irq_enable();
+	}
+	unlock(&descriptor1);
+}
+
+void foo2_join(void* arg) {
+	for (int i = 0; i < (long long) arg; i++) {
+		printf("foo2_join: %d\n", i);
+	}
+}
+
+void foo1_join(void* arg) {
+	printf("create thread foo2_join\n");
+	pid_t foo2_join_pid = create_thread(foo2_join, (void*) 5);
+	join_thread(foo2_join_pid);
+	printf("joined thread foo2_join\n");
+	for (int i = 0; i < (long long) arg; i++) {
+		printf("foo1_join: %d\n", i);
+	}
+}
+
+void threads_test() {
+	printf("create thread foo1\n");
+	pid_t foo1_pid = create_thread(foo1, (void*) 10);
+	printf("create thread foo2\n");
+	pid_t foo2_pid = create_thread(foo2, (void*) 5);
+	printf("threads foo1 and foo2 created\n");
+	
+	join_thread(foo1_pid);
+	printf("joined thread foo1\n");
+	join_thread(foo2_pid);
+	printf("joined thread foo2\n");
+
+
+	printf("create thread foo1_lock\n");
+	pid_t foo1_lock_pid = create_thread(foo1_lock, (void*) 5);
+	printf("create thread foo2_lock\n");
+	pid_t foo2_lock_pid = create_thread(foo2_lock, (void*) 5);
+	printf("threads foo1_lock and foo2_lock created\n");
+	
+	join_thread(foo1_lock_pid);
+	printf("joined thread foo1_lock\n");
+	join_thread(foo2_lock_pid);
+	printf("joined thread foo2_lock\n");
+
+	printf("create thread foo1_join\n");
+	pid_t foo1_join_pid = create_thread(foo1_join, (void*) 5);
+	join_thread(foo1_join_pid);
+	printf("joined thread foo1_join\n");
+}
+
 void main(void)
 {
 	setup_serial();
@@ -105,11 +196,17 @@ void main(void)
 	setup_buddy();
 	setup_paging();
 	setup_alloc();
+
+	setup_threads();
 	setup_time();
-	local_irq_enable();
 
 	buddy_smoke_test();
 	slab_smoke_test();
+
+	local_irq_enable();
+	threads_test();
+
+
 
 	while (1);
 }

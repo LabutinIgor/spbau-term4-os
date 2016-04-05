@@ -3,6 +3,7 @@
 #include "ioport.h"
 #include "stdio.h"
 #include "time.h"
+#include "threads.h"
 
 /*
  * Timer/Counter Control Register Format:
@@ -54,8 +55,13 @@ unsigned long long jiffies;
 
 static void i8254_interrupt_handler(int irq)
 {
-	(void) irq;
 	++jiffies;
+	if (jiffies > 10) {
+		jiffies = 0;
+		unmask_irq(irq);
+		//printf("call scedule from timer\n");
+		scedule();
+	}
 }
 
 void setup_time(void)
