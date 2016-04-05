@@ -6,10 +6,7 @@
 start_thread:
     popq %rax
     popq %rdi
-
     callq *%rax
-
-    movq %rax, %rdi
     callq exit_thread
 
 // int switch_threads(void **old_sp, void *new_sp); // C signature return previous thread
@@ -21,10 +18,8 @@ switch_threads:
     pushq %r14
     pushq %r15
 
-
     movq %rsp, (%rdi) // save SP
     movq %rsi, %rsp   // restore SP
-
 
     popq %r15         // restore volatile register
     popq %r14
