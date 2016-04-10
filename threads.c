@@ -35,8 +35,7 @@ void scedule() {
                 switch_threads(&all_threads[old_thread].stack_pointer, all_threads[cur_thread].stack_pointer);
                 
                 //printf("returned to scedule\n");
-                
-                local_irq_disable();
+
                 break;
             }
             if (all_threads[new_thread].state == TERMINATED) {
@@ -45,6 +44,7 @@ void scedule() {
             }
         } else {
             if (all_threads[new_thread].state == RUNNING) {
+                //printf("same thread\n");
                 break;
             }
         }
@@ -53,26 +53,27 @@ void scedule() {
 }
 
 void exit_thread() {
+    local_irq_disable();
     all_threads[cur_thread].state = TERMINATED;
 
     if (all_threads[joins[cur_thread]].state == JOINING) {
         all_threads[joins[cur_thread]].state = RUNNING;
     }
     //printf("exited %d\n", cur_thread);
-    local_irq_disable();
     scedule();
     //printf("WTF?!\n");
 }
 
 void join_thread(pid_t join_thread) {
+    local_irq_disable();
     all_threads[cur_thread].state = JOINING;
     joins[join_thread] = cur_thread;
     while (all_threads[join_thread].state != TERMINATED && all_threads[join_thread].state != DELETED) {
-        local_irq_disable();
         //printf("scedule from join\n");
         scedule();
-        local_irq_enable();
+        //printf("end join schedule\n");
     }
+    local_irq_enable();
 }
 
 pid_t create_thread(void (*fptr)(void *), void *arg) {
@@ -111,5 +112,6 @@ pid_t create_thread(void (*fptr)(void *), void *arg) {
     new_thread->state = RUNNING;
 
     local_irq_enable();
+
     return (pid_t) (cnt_threads - 1);
 }

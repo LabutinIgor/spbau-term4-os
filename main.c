@@ -98,6 +98,7 @@ static void slab_smoke_test(void)
 }
 
 void foo1(void* arg) {
+	local_irq_enable();
 	for (int i = 0; i < (long long) arg; i++) {
 		printf("foo1: %d\n", i);
 		local_irq_disable();
@@ -108,6 +109,7 @@ void foo1(void* arg) {
 }
 
 void foo2(void* arg) {
+	local_irq_enable();
 	for (int i = 0; i < (long long) arg; i++) {
 		printf("foo2: %d\n", i);
 		local_irq_disable();
@@ -120,6 +122,7 @@ void foo2(void* arg) {
 int descriptor1;
 
 void foo1_lock(void* arg) {
+	local_irq_enable();
 	lock(&descriptor1);
 	for (int i = 0; i < (long long) arg; i++) {
 		printf("foo1_lock: %d\n", i);
@@ -131,6 +134,7 @@ void foo1_lock(void* arg) {
 }
 
 void foo2_lock(void* arg) {
+	local_irq_enable();
 	lock(&descriptor1);
 	for (int i = 0; i < (long long) arg; i++) {
 		printf("foo2_lock: %d\n", i);
@@ -142,12 +146,14 @@ void foo2_lock(void* arg) {
 }
 
 void foo2_join(void* arg) {
+	local_irq_enable();
 	for (int i = 0; i < (long long) arg; i++) {
 		printf("foo2_join: %d\n", i);
 	}
 }
 
 void foo1_join(void* arg) {
+	local_irq_enable();
 	printf("create thread foo2_join\n");
 	pid_t foo2_join_pid = create_thread(foo2_join, (void*) 5);
 	join_thread(foo2_join_pid);
@@ -157,7 +163,18 @@ void foo1_join(void* arg) {
 	}
 }
 
+void test_long_time_to_interrupt(void* arg) {
+	local_irq_enable();
+	printf("created thread test\n");
+	for (int i = 0; i < (long long) arg; i++) {
+		if (i % 10000000 == 0) {
+			printf("test_long_time: %d\n", i);
+		}
+	}
+}
+
 void threads_test() {
+	create_thread(test_long_time_to_interrupt, (void*) 100000000);
 	printf("create thread foo1\n");
 	pid_t foo1_pid = create_thread(foo1, (void*) 10);
 	printf("create thread foo2\n");
