@@ -143,9 +143,20 @@ static void test_file_system() {
 
     printf("Read from a.txt\n");
     read(file1, read_buffer, 1, 3);
-
     printf("Read 1..3 chars: %s\n", read_buffer);
 
+    printf("Make some directories\n");
+    mkdir("", "dir1");
+    mkdir("dir1", "dir2");
+    mkdir("dir1/dir2", "dir3");
+    mkdir("dir1/dir2", "dir4");
+
+    printf("readdir dir1/dir2:\n");
+    struct fs_node* node = readdir("dir1/dir2");
+    while (node != 0) {
+        printf("%s\n", node->name);
+        node = node->next_node;
+    }
 
 
     DBG_INFO("file_system test finished");  

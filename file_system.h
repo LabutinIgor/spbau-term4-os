@@ -4,6 +4,7 @@
 #include "memory.h"
 #include "kmem_cache.h"
 #include "stdio.h"
+#include "locking.h"
 
 struct file {
     char* mem;
@@ -20,7 +21,6 @@ struct fs_node {
 
 void setup_fs();
 struct file* open(const char* path, const char* name);
-void close(struct file* file);
 void read(struct file* file, char* buffer, int offset, int len);
 void write(struct file* file, char* buffer, int offset, int len);
 void mkdir(const char* path, const char* name);

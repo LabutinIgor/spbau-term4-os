@@ -2,22 +2,11 @@
 
 struct fs_node root;
 
+struct spinlock lock;
+
 void setup_fs() {
+    spinlock_init(&lock);
     root.is_dir = 1;
-}
-
-struct fs_node *go_to_child(struct fs_node* node, const char *child_name) {
-    while (node != 0 && node->name != child_name) {
-        node = node->next_node;
-    }
-    return node;
-}
-
-void append(char* str, char c) {
-    int i = 0;
-    while (str[i] != 0) i++;
-    str[i] = c;
-    str[i + 1] = 0;
 }
 
 void copy_str(char* str1, const char* str2) {
@@ -34,12 +23,32 @@ void copy_mem(char* mem1, char* mem2, int len) {
     }
 }
 
+void append(char* str, char c) {
+    int i = 0;
+    while (str[i] != 0) i++;
+    str[i] = c;
+    str[i + 1] = 0;
+}
+
+int str_ne(const char* str1, const char* str2) {
+    int i = 0;
+    while (str1[i] != 0 && str1[i] == str2[i]) i++;
+    return str1[i] != str2[i];
+}
+
+struct fs_node *go_to_child(struct fs_node* node, const char *child_name) {
+    while (node != 0 && str_ne(node->name, child_name)) {
+        node = node->next_node;
+    }
+    return node;
+}
+
 struct fs_node* find_node(const char* path) {
     if (path[0] == 0) {
         return &root;
     }
     int i = 0;
-    struct fs_node* cur_node = &root;
+    struct fs_node* cur_node = root.child;
     char cur_name[100];
 
     while (path[i] != 0) {
@@ -52,6 +61,7 @@ struct fs_node* find_node(const char* path) {
         }
         i++;
     }
+
     return go_to_child(cur_node, cur_name);
 }
 
@@ -66,7 +76,7 @@ struct fs_node* make_file(const char* name) {
 }
 
 struct file* open(const char* path, const char* name) {
-    //some lock?
+    const bool lock_enabled = spin_lock_irqsave(&lock);
 
     struct fs_node* node = find_node(path);
 
@@ -77,23 +87,19 @@ struct file* open(const char* path, const char* name) {
 
     node = node->child;
     
-    while (node->next_node != 0 && node->name != name) {
+    while (node->next_node != 0 && str_ne(node->name, name)) {
         node = node->next_node;
     }
 
-    if (node->name == name) {
+    if (!str_ne(node->name, name)) {
         return node->file;
     }
     struct fs_node* new_node = make_file(name);
     node->next_node = new_node;
 
+    spin_unlock_irqrestore(&lock, lock_enabled);
 
     return new_node->file;
-}
-
-void close(struct file* file) {
-    printf("close: %d\n", file->capacity);
-    //some unlock?
 }
 
 void read(struct file* file, char* buffer, int offset, int len) {
@@ -128,7 +134,9 @@ void write(struct file* file, char* buffer, int offset, int len) {
 }
 
 void mkdir(const char* path, const char* name) {
+    const bool lock_enabled = spin_lock_irqsave(&lock);
     struct fs_node* node = find_node(path);
+
     struct fs_node* new_node = kmem_alloc(sizeof(struct fs_node));
     new_node->is_dir = 1;
     copy_str(new_node->name, name);
@@ -136,15 +144,19 @@ void mkdir(const char* path, const char* name) {
     new_node->next_node = node->child;
     node->child = new_node;
 
+    spin_unlock_irqrestore(&lock, lock_enabled);
 }
 
 struct fs_node* readdir(const char* path) {
+    const bool lock_enabled = spin_lock_irqsave(&lock);
+
     struct fs_node* node = find_node(path);
     if (!node->is_dir) {
         printf("Error in readdir: no such directory\n");
         return 0;
     }
+
+    spin_unlock_irqrestore(&lock, lock_enabled);
+
     return node->child;
 }
-
-
